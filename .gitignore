@@ -4,5 +4,5 @@
 *.mp4
 objetivo.txt
 requirements.txt
-__pycache__
-.vscode
+/src/__pycache__
+/.vscode

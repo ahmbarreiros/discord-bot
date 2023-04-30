@@ -6,3 +6,6 @@ objetivo.txt
 requirements.txt
 /src/__pycache__/*
 .vscode/*
+*.yml
+*.jar
+cogTry.py

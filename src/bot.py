@@ -1,5 +1,5 @@
 import discord
-from discord.ext import commands
+from discord.ext import commands, Interactions
 from modules import *
 from auth import get_auth_header, get_token
 from search_spotify import *

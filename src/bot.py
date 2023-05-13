@@ -1,11 +1,12 @@
 import discord
-from discord.ext import commands, Interactions
+from discord.ext import commands
 from modules import *
 from auth import get_auth_header, get_token
 from search_spotify import *
 # import yt_dlp
 import random
 import wavelink
+from wavelink.ext import spotify
 from datetime import datetime, timedelta
 from typing import Union
 
@@ -14,12 +15,14 @@ load_dotenv()
 token = os.getenv("DISC_TOKEN")
 wavelink_uri = os.getenv("WAVELINK_URI")
 wavelink_password = os.getenv("WAVELINK_PASSWORD")
+wavelink_client_id = os.getenv("WAVELINK_CLIENT_ID")
+wavelink_client_secret = os.getenv("WAVELINK_CLIENT_SECRET")
 
 intents = discord.Intents.default()
 intents.members = True
 intents.message_content = True
 client = commands.Bot(command_prefix = "$", intents=intents)
-last_channel = ""
+sc = spotify.SpotifyClient(client_id=wavelink_client_id, client_secret=wavelink_client_secret)
 
 class CustomPlayer(wavelink.Player):
     def __init__(self):
@@ -27,6 +30,7 @@ class CustomPlayer(wavelink.Player):
     previous_tracks = []
     thumb = ""
     on_rewind = False
+    first_ctx = ""
     
 def checkChannels(channel_name):
     for guild in client.guilds:
@@ -60,7 +64,7 @@ async def on_ready():
 async def connect_nodes():
     await client.wait_until_ready()
     node =  wavelink.Node(uri=wavelink_uri, password=wavelink_password)
-    await wavelink.NodePool.connect(client=client, nodes=[node])
+    await wavelink.NodePool.connect(client=client, nodes=[node], spotify=sc)
 
 @client.event
 async def on_wavelink_node_ready(node: wavelink.Node):
@@ -73,12 +77,11 @@ async def on_message(message):
     if message.author == client.user:
         return
 
-    # print(type(message.author.id))
-    # if message.author.id == 416282849768112128:
-    #     xingamentos = ["vai tomar no cu weld", "vai se fude weld", "chupa meu pau de robo welde"]
-    #     vaiXingar = [True, False]
-    #     if random.choice(vaiXingar):
-    #         await message.channel.send(random.choice(xingamentos))
+    if message.author.id == 416282849768112128:
+        xingamentos = ["vai tomar no cu weld", "vai se fude weld", "chupa meu pau de robo welde"]
+        vaiXingar = [True, False, False, False, False, False, False, False, False]
+        if random.choice(vaiXingar):
+            await message.channel.send(random.choice(xingamentos))
         
     # if message.author.id == 426863952949936130:
     #     gols = ["gooool do navarro", "goooool do vitor guimaraes"]
@@ -104,7 +107,7 @@ async def entrar(ctx):
     elif not vc:
         try:
             await ctx.author.voice.channel.connect(cls=CustomPlayer())
-            await ctx.send("entrei")
+            await ctx.send("🐊")
         except Exception as e:
             await ctx.send("erro ao entrar")
             print(f"erro entrar: {type(e).__name__}") 
@@ -133,7 +136,7 @@ async def musica(ctx, *, search: wavelink.YouTubeTrack, channel = None):
                 await ctx.send(f"conectado no canal desejado")
             else:
                 vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=CustomPlayer())
-                await ctx.send(f"conectado")
+                await ctx.send(f"🐊")
         except Exception as e:
             await ctx.send("erro ao me conectar. adm cheque o sistema!!!")
             print(f"erro musica conectar: {type(e).__name__}")
@@ -141,43 +144,50 @@ async def musica(ctx, *, search: wavelink.YouTubeTrack, channel = None):
         return await ctx.send("voce precisa estar em um canal de voz. burro.")
     elif ctx.author.voice.channel.name != ctx.me.voice.channel.name:
         return await ctx.send("a gente precisa estar no mesmo canal bobo. eu sou só 1")
-            
     if vc.is_playing():
         try:
             print(search.length)
             vc.queue.put(item=search)
-            await ctx.send(embed=discord.Embed(
+            CustomPlayer.thumb = search.thumbnail
+            search_thumb = CustomPlayer.thumb
+            em = discord.Embed(
                 title=search.title,
-                description=f"botei {search.title} na fila...(no canal {vc.channel.name})"
-            ))
+                colour=discord.Colour.random().value,
+                description="adicionada na fila, use $lista para ver a posição 💿💃"
+            )
+            em.set_author(name=search.author)
+            em.set_thumbnail(url=search_thumb)
+            em.add_field(name="Duração:", value=f"{str(timedelta(milliseconds=search.length))}")
+            em.add_field(name="Video URL:", value=f"{str(search.uri)}")
+            return await ctx.send(embed=em)
         except Exception as e:
             await ctx.send("erro ao botar musica na fila. adm cheque o sistema!!!")
             print(f"erro musica fila: {type(e).__name__}")
     else:
         try:
             await vc.play(search)
-            await ctx.send(f"{search.title} tocando")
-            player = node.get_player(ctx.guild.id)
-            duracao = search.duration * 1000
-            duracao = datetime.fromtimestamp(duracao / 1000)
-            await ctx.send(
-                embed=discord.Embed(
-                    color=discord.Colour.red().value,
-                title=search.title,
-                url=search.uri,
-                description= f"tocando agora. duração: {duracao}"
-            )
-            )
             CustomPlayer.thumb = search.thumbnail
+            search_thumb = CustomPlayer.thumb
+            em = discord.Embed(
+            title=search.title,
+            colour=discord.Colour.random().value,
+            description="💿💃tocando agora..."
+            )
+            em.set_author(name=search.author)
+            em.set_thumbnail(url=search_thumb)
+            em.add_field(name="Duração:", value=f"{str(timedelta(milliseconds=search.length))}")
+            em.add_field(name="Video URL:", value=f"{str(search.uri)}")
+            await ctx.send(embed=em)
+            
         except Exception as e:
             await ctx.send("erro ao tocar a musica. adm cheque o sistema!!!")
             print(f"erro musica: {type(e).__name__}")
-            
+        
     vc.ctx = ctx
     setattr(vc, "loop", False)
 
 @client.command()
-async def pular(ctx):
+async def pular(ctx, position: int = None):
     vc = ctx.voice_client
     node = wavelink.NodePool.get_connected_node()
     player = node.get_player(ctx.guild.id)
@@ -187,33 +197,68 @@ async def pular(ctx):
         return await ctx.send("preciso estar em um canal")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
         return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, so vai pular se entrar aqui")
-    try:
+    if position is None:
+        try:
+            if not vc.is_playing():
+                return await ctx.send("nao está tocando nada")
+            if vc.queue.is_empty:
+                if not vc.loop:
+                    await ctx.send("musica pulada, adicione mais musicas com $musica")
+                else:
+                    await ctx.send("musica reiniciada pois $loop está ligado")
+                return await vc.stop()
+            
+            if vc.is_paused():
+                await vc.resume()
+                
+            if vc.is_playing():
+                await vc.seek(player.position * 1000)
+                # track = player.queue.get()
+                # print(f"queue get method: {track}")
+                await ctx.send("musica pulada, tocando a proxima...")
+                # await vc.play(track)
+            else:
+                await ctx.send("tente de novo em alguns segundos")
+        except Exception as e:
+            await ctx.send("erro ao tocar a musica. adm cheque o sistema!!!")
+            print(f"erro pular: {type(e).__name__}")
+    elif type(position) is int:
         if not vc.is_playing():
             return await ctx.send("nao está tocando nada")
         if vc.queue.is_empty:
-            if not vc.loop:
-                await ctx.send("musica pulada, adicione mais musicas com $musica")
-            else:
-                await ctx.send("musica reiniciada pois $loop está ligado")
-            return await vc.stop()
-        
+            return await ctx.send("impossivel pular para a posição, a fila está vazia")
         if vc.is_paused():
             await vc.resume()
-            
+        
+        if len(vc.queue) < position or position > 5:
+            return await ctx.send("posição inválida, use $lista para achar a posição da música")
+        
+        if position == 1 and vc.is_playing():
+            await vc.seek(player.position * 1000)
+            return await ctx.send("musica pulada, tocando a proxima...")
+        
         if vc.is_playing():
             await vc.seek(player.position * 1000)
-            # track = player.queue.get()
-            # print(f"queue get method: {track}")
-            await ctx.send("musica pulada, tocando a proxima...")
-            # await vc.play(track)
-        else:
-            await ctx.send("tente de novo em alguns segundos")
-    except Exception as e:
-        await ctx.send("erro ao tocar a musica. adm cheque o sistema!!!")
-        print(f"erro pular: {type(e).__name__}")
+            queue_len = len(vc.queue)
+            for i in range(queue_len - 1):
+                skipped_track = vc.queue.get()
+                print(f"pulada {skipped_track}")
+                await vc.play(skipped_track)
+                print(f"apos {vc.queue}")
+                await vc.seek(player.position * 1000)
+            await ctx.send(f"musica pulada para a posição {position}")
+        
 
 @client.event
 async def on_wavelink_track_start(payload: wavelink.TrackEventPayload):
+    player = payload.player
+    track = player.current
+    try:
+        ctx = player.ctx.channel
+        CustomPlayer.thumb = track.thumbnail
+        track_thumb = CustomPlayer.thumb
+    except AttributeError:
+        pass
     if not CustomPlayer.on_rewind:
         tracks_history_copy = CustomPlayer.previous_tracks.copy()
         CustomPlayer.rewind_history = tracks_history_copy
@@ -224,7 +269,19 @@ async def on_wavelink_track_start(payload: wavelink.TrackEventPayload):
                 track_history.pop(0)
             track_history.append(track)
             CustomPlayer.previous_tracks = track_history
-            print(f"custom 2: {CustomPlayer.previous_tracks}")
+            try:
+                print(f"custom 2: {CustomPlayer.previous_tracks}")
+                em = discord.Embed(
+                title=track.title,
+                colour=discord.Colour.random().value
+                )
+                em.set_author(name=track.author)
+                em.set_thumbnail(url=track_thumb)
+                em.add_field(name="Duração:", value=f"{str(timedelta(milliseconds=track.length))}")
+                em.add_field(name="Video URL:", value=f"{str(track.uri)}")
+                return await ctx.send(embed=em)
+            except AttributeError:
+                pass
     except Exception as e:
         print(f"erro on start: {type(e).__name__}")
 
@@ -245,14 +302,6 @@ async def on_wavelink_track_end(payload: wavelink.TrackEventPayload):
         try:
             track = vc.queue.get()
             await vc.play(track)
-            await channel.send(
-                embed=discord.Embed(
-                color=discord.Colour.red().value,
-                title=track.title,
-                url=track.uri,
-                description= f"tocando agora. duração: {track.duration}"
-            )
-            )
         except Exception as e:
             await ctx.send("Erro ao tocar a próxima musica da fila. adm cheque o sistema!!!")
             print(f"erro on end: {type(e).__name__}")
@@ -332,18 +381,19 @@ async def loop(ctx):
         await ctx.send("loop desativado")
 
 @client.command()
-async def lista(ctx):
+async def lista(ctx, dont_send = False):
     vc = ctx.voice_client
-    em = discord.Embed()
+    em = discord.Embed(title="Posição na fila:", colour=discord.Colour.orange().value)
     if not vc.queue.is_empty:
         queue = vc.queue.copy()
         songs = 0
         for song in queue:
             songs += 1
-            em.add_field(name=f"{songs}.", value=f"{song.title}")
-        return await ctx.send(embed=em)
+            em.add_field(name=f"{songs}.", value=f"{song.title}", inline= True)
     else:
         em.add_field(name="Erro lista:", value="Nenhuma música na fila.")
+    
+    if not dont_send:
         return await ctx.send(embed=em)
     
 @client.command()
@@ -351,7 +401,9 @@ async def reiniciar(ctx):
     vc = ctx.voice_client
     node = wavelink.NodePool.get_connected_node()
     player = node.get_player(ctx.guild.id)
-    
+    track = player.current
+    CustomPlayer.thumb = track.thumbnail
+    track_thumb = CustomPlayer.thumb
     if not ctx.author.voice:
         return await ctx.send("voce precisa estar em um canal de voz pra reiniciar a musica")
     elif not vc:
@@ -367,7 +419,16 @@ async def reiniciar(ctx):
                 await vc.resume()
             if vc.is_playing():
                 await vc.seek(player.position * 0)
-                return await ctx.send("musica reinicada eba")
+                em = discord.Embed(
+                title=track.title,
+                colour=discord.Colour.random().value,
+                description="💿💃tocando novamente..."
+                )
+                em.set_author(name=track.author)
+                em.set_thumbnail(url=track_thumb)
+                em.add_field(name="Duration:", value=f"{str(timedelta(milliseconds=track.length))}")
+                em.add_field(name="Video URL:", value=f"{str(track.uri)}")
+                return await ctx.send(embed=em)
                 
         except Exception as e:
             await ctx.send("erro ao tocar a musica. adm cheque o sistema!!!")
@@ -397,44 +458,26 @@ async def retroceder(ctx, position = None):
         await vc.resume()
         
     if vc.is_playing() and position == None:
-        print('-'*10)
-        print(f"histo: {history}")
-        print('-'*10)
         atual = history.pop()
         vc.queue.put_at_front(item=atual)
-        print(f"atual: {atual}")
-        print('-'*10)
         last_track = history.pop()
-        print(f"lt: {last_track}")
-        print('-'*10)
         CustomPlayer.previous_tracks = history
         await vc.play(last_track)
         # CustomPlayer.on_rewind = True
         await ctx.send("retrocedido... tocando de novo a última música")
-        print(f"custom: {CustomPlayer.previous_tracks}")
-        print('-'*10)
     elif vc.is_playing() and type(index_pos) is int:
         try:
             if index_pos < 0 or index_pos > len(history):
                 raise Exception
-            print('-'*10)
-            print(f"histo: {history}")
-            print('-'*10)
             last_tracks = history.copy()
             for song in range(index_pos):
                 actual_song = last_tracks.pop()
                 vc.queue.put_at_front(item=actual_song)
-            print(f"last: {last_tracks}")
-            print('-'*10)
             song = last_tracks.pop()
             CustomPlayer.previous_tracks = last_tracks
-            print(song)
-            print('-'*10)
             await vc.play(song)
             # CustomPlayer.on_rewind = True
             await ctx.send("retrocedido... tocando a musica especificada")
-            print(f"custom: {CustomPlayer.previous_tracks}")
-            print('-'*10)
         except:
             return await ctx.send("index inválido, não foi possível retroceder a música desejada. Tente de novo com um index válido ou com o nome da música")
         
@@ -498,6 +541,7 @@ async def tocando(ctx):
     node = wavelink.NodePool.get_connected_node()
     player = node.get_player(ctx.guild.id)
     track = player.current
+    CustomPlayer.thumb = track.thumbnail
     track_thumb = CustomPlayer.thumb
     print("-"*10)
     print(track_thumb)
@@ -513,10 +557,106 @@ async def tocando(ctx):
         )
     em.set_author(name=track.author)
     em.set_thumbnail(url=track_thumb)
-    em.add_field(name="Duration:", value=f"{str(timedelta(milliseconds=track.length))}")
+    em.add_field(name="Duração:", value=f"{str(timedelta(milliseconds=track.length))}")
     em.add_field(name="Video URL:", value=f"{str(track.uri)}")
     return await ctx.send(embed=em)
+
+@client.command()
+async def spot(ctx, *, search: str, channel = None):
+    vc = ctx.voice_client
+    node = wavelink.NodePool.get_connected_node()
+    player = node.get_player
+    if not vc:
+        try:
+            if not channel == None:
+                print(channel)
+                channel_ctx = checkChannels(channel)
+                print(channel_ctx)
+                vc: CustomPlayer = await channel_ctx.connect(cls=CustomPlayer())
+                await ctx.send(f"conectado no canal desejado")
+            else:
+                vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=CustomPlayer())
+                await ctx.send(f"🐊")
+        except Exception as e:
+            await ctx.send("erro ao me conectar. adm cheque o sistema!!!")
+            print(f"erro musica conectar: {type(e).__name__}")
+    elif not ctx.author.voice.channel.name and channel == None:
+        return await ctx.send("voce precisa estar em um canal de voz. burro.")
+    elif ctx.author.voice.channel.name != ctx.me.voice.channel.name:
+        return await ctx.send("a gente precisa estar no mesmo canal bobo. eu sou só 1")
+    if vc.is_playing():
+        try:
+            vc.queue.put(item=search)
+            # CustomPlayer.thumb = search.thumbnail
+            # search_thumb = CustomPlayer.thumb
+            # em = discord.Embed(
+            #     title=search.title,
+            #     colour=discord.Colour.random().value,
+            #     description="adicionada na fila, use $lista para ver a posição 💿💃"
+            # )
+            # em.set_author(name=search.author)
+            # em.set_thumbnail(url=search_thumb)
+            # em.add_field(name="Duração:", value=f"{str(timedelta(milliseconds=search.length))}")
+            # em.add_field(name="Video URL:", value=f"{str(search.uri)}")
+            # return await ctx.send(embed=em)
+        except Exception as e:
+            await ctx.send("erro ao botar musica na fila. adm cheque o sistema!!!")
+            print(f"erro musica fila: {type(e).__name__}")
+    else:
+        try:
+            print("antes")
+            decoded = spotify.decode_url(search)
+            print(decoded)
+            if decoded and decoded['type'] is spotify.SpotifySearchType.track:
+                await vc.play(spotify.SpotifyTrack.search(query=decoded["id"], type=decoded["type"]))
+            # await vc.play(decoded)
+            print("antes2")
+            await ctx.send("ok")
+            # CustomPlayer.thumb = search.thumbnail
+            # search_thumb = CustomPlayer.thumb
+            # em = discord.Embed(
+            # title=search.title,
+            # colour=discord.Colour.random().value,
+            # description="💿💃tocando agora..."
+            # )
+            # em.set_author(name=search.author)
+            # em.set_thumbnail(url=search_thumb)
+            # em.add_field(name="Duração:", value=f"{str(timedelta(milliseconds=search.length))}")
+            # em.add_field(name="Video URL:", value=f"{str(search.uri)}")
+            # return await ctx.send(embed=em)
+            
+        except Exception as e:
+            # await ctx.send("erro ao tocar a musica. adm cheque o sistema!!!")
+            print(f"erro spot: {type(e).__name__}")
+            for arg in e.args:
+                print(arg)
+    vc.ctx = ctx
+    setattr(vc, "loop", False)
     
+    
+@client.command()
+async def wesley(ctx):
+    return await ctx.send("CARA 😤😤..........................EU VOU MATAR ESSE FILHA DA PUTA 🚫😡😡🤬......EU VOU MATAR ESSE FILHA DA PUTA NA HORA QUE ELE SAIR 🤬👊 🏃(do estadio 🥰)........ CARALHO CARA 😡😡😠....... PORRA FOI FALTA CLARA ALI CARA.......(ei juiz, vai tomar no cu)...... EI JUIZ VAI TOMAR NO CU 🤬🤬🥵 EI JUIZ VAI TOMAR NO CU 🤬🤬🥵........... SEU FILHO DA PUTA 😮‍💨😮‍💨🤱............ caralho rapaziada 😓😓..... ta foda......😔😔😞")
+
+@client.command()
+async def boost(ctx):
+    vc = ctx.voice_client
+    node = wavelink.NodePool.get_connected_node()
+    player = node.get_player(ctx.guild.id)
+    if not ctx.author.voice:
+        return await ctx.send("voce precisa estar em um canal de voz pra pular burro")
+    elif not vc:
+        return await ctx.send("preciso estar em um canal")
+    elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
+        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, so vai pular se entrar aqui")
+    if vc._filter is None:
+        await vc.set_filter(wavelink.Filter())
+    if vc:
+        t = {
+            "boost": await vc.set_filter(wavelink.Filter(vc._filter, equalizer=wavelink.Equalizer.boost()))
+        }
+        await vc.set_filter(wavelink.Filter(t["boost"]))
+        await ctx.send()
         
 @musica.error
 async def play_error(ctx, error):
@@ -525,7 +665,8 @@ async def play_error(ctx, error):
     else:
         print(error)
         await ctx.send("tem que entrar em um canal de voz burro")
-        
+
+
 # @client.command(pass_context = True)
 # async def tocar(ctx, arg):
 #     if ctx.author.voice:

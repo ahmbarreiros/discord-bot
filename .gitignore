@@ -10,3 +10,4 @@ requirements.txt
 *.jar
 cogTry.py
 /src/logs/*
+*.ogg

@@ -65,31 +65,12 @@ async def connect_nodes():
 async def on_wavelink_node_ready(node: wavelink.Node):
     print(f'Node: <{node.status}> is ready')
 
-@client.event
-async def on_message(message):
-    
-    await client.process_commands(message)
-    if message.author == client.user:
-        return
-
-    if message.author.id == 416282849768112128:
-        xingamentos = ["vai tomar no cu weld", "vai se fude weld", "chupa meu pau de robo welde"]
-        vaiXingar = [True, False, False, False, False, False, False, False, False]
-        if random.choice(vaiXingar):
-            await message.channel.send(random.choice(xingamentos))
-        
-    # if message.author.id == 426863952949936130:
-    #     gols = ["gooool do navarro", "goooool do vitor guimaraes"]
-    #     vaiGol = [True, False]
-    #     if random.choice(vaiGol):
-    #         await message.channel.send(random.choice(gols))
-
 
 @client.command()
 async def entrar(ctx):
     vc = ctx.voice_client
     if not ctx.author.voice:
-            await ctx.send("voce precisa estar em um canal de voz burro")
+            await ctx.send("voce precisa estar em um canal de voz")
     elif ctx.me.voice:
         await ctx.send(f"eu ja estou nesse canal de voz 👉 {ctx.me.voice.channel.name}")
     elif not vc:
@@ -103,7 +84,7 @@ async def entrar(ctx):
 @client.command(pass_context = True)
 async def sair(ctx):
     if not ctx.author.voice or not ctx.me.voice.channel or ctx.author.voice.channel.id != ctx.me.voice.channel.id:
-        return await ctx.send("você precisa estar no mesmo canal que eu pra me tirar daqui duvido 👉 {ctx.me.voice.channel.name}")  
+        return await ctx.send("você precisa estar no mesmo canal que eu 👉 {ctx.me.voice.channel.name}")  
     elif ctx.voice_client:
         await ctx.guild.voice_client.disconnect()
         await ctx.send("sai")
@@ -126,12 +107,12 @@ async def musica(ctx, *, search: wavelink.YouTubeTrack, channel = None):
                 vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=CustomPlayer())
                 await ctx.send(f"🐊")
         except Exception as e:
-            await ctx.send("erro ao me conectar. adm cheque o sistema!!!")
+            await ctx.send("erro ao me conectar.")
             print(f"erro musica conectar: {type(e).__name__}")
     elif not ctx.author.voice.channel.name and channel == None:
-        return await ctx.send("voce precisa estar em um canal de voz. burro.")
+        return await ctx.send("voce precisa estar em um canal de voz. .")
     elif ctx.author.voice.channel.name != ctx.me.voice.channel.name:
-        return await ctx.send("a gente precisa estar no mesmo canal bobo. eu sou só 1")
+        return await ctx.send("a gente precisa estar no mesmo canal")
     if vc.is_playing():
         try:
             print(search.length)
@@ -149,7 +130,7 @@ async def musica(ctx, *, search: wavelink.YouTubeTrack, channel = None):
             em.add_field(name="Video URL:", value=f"{str(search.uri)}")
             return await ctx.send(embed=em)
         except Exception as e:
-            await ctx.send("erro ao botar musica na fila. adm cheque o sistema!!!")
+            await ctx.send("erro ao botar musica na fila.")
             print(f"erro musica fila: {type(e).__name__}")
     else:
         try:
@@ -168,7 +149,7 @@ async def musica(ctx, *, search: wavelink.YouTubeTrack, channel = None):
             await ctx.send(embed=em)
             
         except Exception as e:
-            await ctx.send("erro ao tocar a musica. adm cheque o sistema!!!")
+            await ctx.send("erro ao tocar a musica.")
             print(f"erro musica: {type(e).__name__}")
         
     vc.ctx = ctx
@@ -184,12 +165,12 @@ async def playlist(ctx, search: str):
             vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=CustomPlayer())
             await ctx.send(f"🐊")
         except Exception as e:
-            await ctx.send("erro ao me conectar. adm cheque o sistema!!!")
+            await ctx.send("erro ao me conectar.")
             print(f"erro musica conectar: {type(e).__name__}")
     elif not ctx.author.voice.channel.name:
-        return await ctx.send("voce precisa estar em um canal de voz. burro.")
+        return await ctx.send("voce precisa estar em um canal de voz. .")
     elif ctx.author.voice.channel.name != ctx.me.voice.channel.name:
-        return await ctx.send("a gente precisa estar no mesmo canal bobo. eu sou só 1")
+        return await ctx.send("a gente precisa estar no mesmo canal")
     playlist = await wavelink.YouTubePlaylist.search(search)
     tracks: list[wavelink.YouTubeTrack] = playlist.tracks
     last_track = tracks[-1]
@@ -225,11 +206,11 @@ async def pular(ctx, position: int = None):
     node = wavelink.NodePool.get_connected_node()
     player = node.get_player(ctx.guild.id)
     if not ctx.author.voice:
-        return await ctx.send("voce precisa estar em um canal de voz pra pular burro")
+        return await ctx.send("voce precisa estar em um canal de voz")
     elif not vc:
         return await ctx.send("preciso estar em um canal")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, so vai pular se entrar aqui")
+        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}")
     if position is None:
         try:
             if not vc.is_playing():
@@ -250,7 +231,7 @@ async def pular(ctx, position: int = None):
             else:
                 await ctx.send("tente de novo em alguns segundos")
         except Exception as e:
-            await ctx.send("erro ao tocar a musica. adm cheque o sistema!!!")
+            await ctx.send("erro ao tocar a musica")
             print(f"erro pular: {type(e).__name__}")
     elif type(position) is int:
         if not vc.is_playing():
@@ -324,7 +305,6 @@ async def on_wavelink_track_end(payload: wavelink.TrackEventPayload):
     if CustomPlayer.playlist_ctx is not None:
         ctx = CustomPlayer.playlist_ctx
         vc = ctx.voice_client
-        print("dentro")
     else:
         vc = payload.player
         ltrack = payload.track
@@ -341,18 +321,18 @@ async def on_wavelink_track_end(payload: wavelink.TrackEventPayload):
             track = vc.queue.get()
             await vc.play(track)
         except Exception as e:
-            await ctx.send("Erro ao tocar a próxima musica da fila. adm cheque o sistema!!!")
+            await ctx.send("Erro ao tocar a próxima musica da fila")
             print(f"erro on end: {type(e).__name__}")
 
 @client.command(pass_context = True)
 async def pausar(ctx):
     vc = ctx.voice_client
     if not ctx.author.voice:
-        return await ctx.send("voce precisa estar em um canal de voz pra me pausar cara")
+        return await ctx.send("voce precisa estar em um canal de voz pra me pausar")
     elif not vc:
-        return await ctx.send("eu nem to em um canal de voz esquizofrenico")
+        return await ctx.send("eu não to em um canal de voz")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, so vai pausar se entrar aqui")
+        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}")
     
     if vc.is_playing():
         await vc.pause()
@@ -364,11 +344,11 @@ async def pausar(ctx):
 async def voltar(ctx):
     vc = ctx.voice_client
     if not ctx.author.voice:
-        return await ctx.send("voce precisa estar em um canal de voz pra eu voltar a tocar lá")
+        return await ctx.send("voce precisa estar em um canal de voz pra eu voltar a tocar")
     elif not vc:
-        return await ctx.send("eu nem to em um canal de voz esquizofrenico")
+        return await ctx.send("eu não to em um canal de voz")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"eu to nesse canal ó 👉 {ctx.me.voice.channel.name}, usa o comando quando vc estiver aqui também")
+        return await ctx.send(f"eu to nesse canal ó 👉 {ctx.me.voice.channel.name}")
     
     if vc.is_paused():
         await vc.resume()
@@ -382,9 +362,9 @@ async def parar(ctx):
     if not ctx.author.voice:
         return await ctx.send("VOCE NAO VAI ME PARAR")
     elif not vc:
-        return await ctx.send("eu nem to em um canal de voz esquizofrenico")
+        return await ctx.send("eu não to em um canal de voz")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"EU SOU O DONO DO CANAL {ctx.me.voice.channel.name}. NINGUEM ME PARARARA ")
+        return await ctx.send(f"EU SOU O DONO DO CANAL {ctx.me.voice.channel.name} MUA HA HA ")
     
     if vc.is_playing():
         vc.queue.clear()
@@ -400,9 +380,9 @@ async def loop(ctx):
     if not ctx.author.voice:
         return await ctx.send("voce precisa estar em um canal de voz pra me loooooooooopar")
     elif not vc:
-        return await ctx.send("eu nem to em um canal de voz esquizofrenico")
+        return await ctx.send("eu não to em um canal de voz")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, loooooooopa eu aqui")
+        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}")
     
     try:
         vc.loop ^= True
@@ -445,9 +425,9 @@ async def reiniciar(ctx):
     if not ctx.author.voice:
         return await ctx.send("voce precisa estar em um canal de voz pra reiniciar a musica")
     elif not vc:
-        return await ctx.send("eu nem to em um canal de voz esquizofrenico")
+        return await ctx.send("eu não to em um canal de voz")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, só vou reiniciar aqui")
+        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}")
     
     if vc:
         try:
@@ -472,7 +452,7 @@ async def reiniciar(ctx):
                 return await ctx.send(embed=em)
                 
         except Exception as e:
-            await ctx.send("erro ao tocar a musica. adm cheque o sistema!!!")
+            await ctx.send("erro ao tocar a musica")
             print(f"erro reiniciar: {type(e).__name__}")
     else:
         await ctx.send("bot nao está em um canal de musica")
@@ -488,7 +468,7 @@ async def retroceder(ctx, position = None):
     if not ctx.author.voice:
         return await ctx.send("voce precisa estar em um canal de voz pra retroceder")
     elif not vc:
-        return await ctx.send("eu nem to em um canal de voz esquizofrenico")
+        return await ctx.send("eu não to em um canal de voz")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
         return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}")
     history = CustomPlayer.previous_tracks
@@ -526,9 +506,9 @@ async def ir(ctx, tempo):
     if not ctx.author.voice:
         return await ctx.send("voce precisa estar em um canal de voz pra ir para um tempo especifico na musica")
     elif not vc:
-        return await ctx.send("eu nem to em um canal de voz esquizofrenico")
+        return await ctx.send("eu não to em um canal de voz")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, usa o comando aqui")
+        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}")
     try:
         if tempo == None:
             print(f"tempo: {tempo}")
@@ -558,9 +538,9 @@ async def volume(ctx, volume: int = 0):
     if not ctx.author.voice:
         return await ctx.send("voce precisa estar em um canal de voz para mudar meu volume")
     elif not vc:
-        return await ctx.send("eu nem to em um canal de voz esquizofrenico")
+        return await ctx.send("eu não to em um canal de voz")
     elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, usa o comando aqui")
+        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}")
     if volume == 0:
         return await ctx.send(f"o volume atual é {vc.volume}")
     
@@ -585,7 +565,7 @@ async def tocando(ctx):
     print("-"*10)
     print(track_thumb)
     if not vc:
-        return await ctx.send("eu nem to em um canal de voz esquizofrenico")
+        return await ctx.send("eu não to em um canal de voz")
     
     if not vc.is_playing():
         return await ctx.send("nao esta tocando nada")
@@ -600,30 +580,6 @@ async def tocando(ctx):
     em.add_field(name="Video URL:", value=f"{str(track.uri)}")
     return await ctx.send(embed=em)
 
-@client.command()
-async def wesley(ctx):
-    return await ctx.send("CARA 😤😤..........................EU VOU MATAR ESSE FILHA DA PUTA 🚫😡😡🤬......EU VOU MATAR ESSE FILHA DA PUTA NA HORA QUE ELE SAIR 🤬👊 🏃(do estadio 🥰)........ CARALHO CARA 😡😡😠....... PORRA FOI FALTA CLARA ALI CARA.......(ei juiz, vai tomar no cu)...... EI JUIZ VAI TOMAR NO CU 🤬🤬🥵 EI JUIZ VAI TOMAR NO CU 🤬🤬🥵........... SEU FILHO DA PUTA 😮‍💨😮‍💨🤱............ caralho rapaziada 😓😓..... ta foda......😔😔😞")
-
-@client.command()
-async def boost(ctx):
-    vc = ctx.voice_client
-    node = wavelink.NodePool.get_connected_node()
-    player = node.get_player(ctx.guild.id)
-    if not ctx.author.voice:
-        return await ctx.send("voce precisa estar em um canal de voz pra pular burro")
-    elif not vc:
-        return await ctx.send("preciso estar em um canal")
-    elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, so vai pular se entrar aqui")
-    if vc._filter is None:
-        await vc.set_filter(wavelink.Filter())
-    if vc:
-        t = {
-            "boost": await vc.set_filter(wavelink.Filter(vc._filter, equalizer=wavelink.Equalizer.boost()))
-        }
-        await vc.set_filter(wavelink.Filter(t["boost"]))
-        await ctx.send("boost ativado")
-        
 @client.command()
 async def ajuda(ctx):
     em = discord.Embed(title="Lista de comandos :D", colour=discord.Colour.random().value, description="Para usar os comandos, é necessário estar em um canal de voz")
@@ -650,6 +606,6 @@ async def play_error(ctx, error):
         await ctx.send("musica invalida (nao esta no youtube)")
     else:
         print(error)
-        await ctx.send("tem que entrar em um canal de voz burro")
+        await ctx.send("tem que entrar em um canal de voz ")
   
 client.run(token)

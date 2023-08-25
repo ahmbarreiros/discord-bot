@@ -28,6 +28,7 @@ class CustomPlayer(wavelink.Player):
     playlist_ctx = None
     last_playlist_track = None
     loop = False
+    jacare = False
     
 def checkChannels(channel_name):
     for guild in client.guilds:
@@ -259,7 +260,7 @@ async def pular(ctx, position: int = None):
                     await vc.play(track)
                     break
                 cont = cont + 1
-                await asyncio.sleep((1/1000))
+                await asyncio.sleep((10/1000))
             await ctx.send(f"musica pulada para a posição {position}")
             
 @client.command()
@@ -282,12 +283,19 @@ async def historico(ctx):
 
 @client.event
 async def on_wavelink_track_start(payload: wavelink.TrackEventPayload):
+    await asyncio.sleep(2)
     player = payload.player
     track = player.current
     try:
-        ctx = player.ctx.channel
+        ctx = player.channel
+        
+        if ctx is None:
+            ctx = Custom_player.playlist_ctx
+        if ctx is None:
+            raise Exception
     except:
-        ctx = None
+        print("ctx does not exist")
+        return
     try:
         CustomPlayer.thumb = track.thumbnail
         track_thumb = CustomPlayer.thumb
@@ -343,6 +351,7 @@ async def on_wavelink_track_end(payload: wavelink.TrackEventPayload):
         await ctx.send("Erro 0x4A5E")
         print(f"{type(e).__name__}\n{repr(e)}") 
         pass
+    await asyncio.sleep(1)
     if not vc.is_playing() and not vc.queue.is_empty:
         try:
             track = vc.queue.get()
@@ -351,7 +360,7 @@ async def on_wavelink_track_end(payload: wavelink.TrackEventPayload):
             await asyncio.sleep(1)
         except Exception as e:
             await ctx.send("Erro 0x4A5F")
-        print(f"{type(e).__name__}\n{repr(e)}") 
+            #print(f"{type(e).__name__}\n{repr(e)}") 
     else:
         await asyncio.sleep(5)
         if not vc.is_playing() and vc.queue.is_empty:
@@ -651,25 +660,46 @@ async def jacare(ctx):
     if not vc:
         try:
             vc: CustomPlayer = await ctx.author.voice.channel.connect(cls=CustomPlayer())
-            await ctx.send(f"🐊")
+            await ctx.send(f"🐊 $jacare")
         except Exception as e:
             await ctx.send("Erro 0x4A6F")
-            print(f"{type(e).__name__}\n{repr(e)}") 
+            #print(f"{type(e).__name__}\n{repr(e)}") 
     elif not ctx.author.voice.channel.name:
         return await ctx.send("voce precisa estar em um canal de voz. burro.")
     elif ctx.author.voice.channel.name != ctx.me.voice.channel.name:
         return await ctx.send("a gente precisa estar no mesmo canal bobo. eu sou só 1")
+    if vc.jacare:
+            return await ctx.send("Playlist tocando, espere acabar ou digite $parar para adicionar outras músicas.")
     playlist = await wavelink.YouTubePlaylist.search("https://www.youtube.com/playlist?list=PLlj4onbCBVbJXICgBqXbaifw23Xs5nGSk")
+    playlist2 = await wavelink.YouTubePlaylist.search("https://www.youtube.com/playlist?list=PLlj4onbCBVbJpkaL9ms0-mUV1dSTD7D05")
     tracks: list[wavelink.YouTubeTrack] = playlist.tracks
+    tracks2: list[wavelink.YoutubeTrack] = playlist2.tracks
+    print(len(tracks))
     last_track = tracks[-1]
-    CustomPlayer.last_playlist_track = last_track
+    print(tracks[0])
+    print(last_track)
+    print("###")
+    last_track2 = tracks2[-1]
+    print(len(tracks2))
+    print(tracks2[0])
+    print(last_track2)
+    CustomPlayer.last_playlist_track = last_track2
     # vc.queue.clear()
+    cont = 0
     for track in tracks:
+        #if(cont < 150):
+        vc.queue.put(track)
+        #else:
+        #    break
+        #cont += 1
+    for track in tracks2:
         vc.queue.put(track)
     vc.queue.shuffle()
+    print(vc.queue.count)
     if not vc.is_playing():
         first = vc.queue.get()
         await vc.play(first)
+        await asyncio.sleep(1)
         CustomPlayer.thumb = first.thumbnail
         first_thumb = CustomPlayer.thumb
         em = discord.Embed(
@@ -683,8 +713,9 @@ async def jacare(ctx):
         em.add_field(name="Video URL:", value=f"{str(first.uri)}")
         await ctx.send(embed=em)
     await ctx.send("Jacaré musicas tocando agora")
-    vc.ctx = ctx
-    CustomPlayer.playlist_ctx = ctx
+    vc.jacare = True 
+    #vc.ctx = ctx
+    #CustomPlayer.playlist_ctx = vc.ctx
         
 @client.command()
 async def ajuda(ctx):

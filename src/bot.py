@@ -94,7 +94,6 @@ async def sair(ctx):
         
 
 @client.command(pass_context = True)
-#search: Union[wavelink.YoutubeTrack, etcetc...]
 async def musica(ctx, *, search: wavelink.YouTubeTrack, channel = None):
     vc = ctx.voice_client
     node = wavelink.NodePool.get_connected_node()
@@ -302,7 +301,6 @@ async def on_wavelink_track_start(payload: wavelink.TrackEventPayload):
     except Exception as e:
         await ctx.send("Erro 0x4A5C-1")
         print(f"{type(e).__name__}\n{repr(e)}") 
-    # if track == CustomPlayer.last_playlist_track:
     if CustomPlayer.loop:
         CustomPlayer.last_playlist_track = None
         CustomPlayer.playlist_ctx = None
@@ -360,7 +358,7 @@ async def on_wavelink_track_end(payload: wavelink.TrackEventPayload):
             await asyncio.sleep(1)
         except Exception as e:
             await ctx.send("Erro 0x4A5F")
-            #print(f"{type(e).__name__}\n{repr(e)}") 
+            print(f"{type(e).__name__}\n{repr(e)}") 
     else:
         await asyncio.sleep(5)
         if not vc.is_playing() and vc.queue.is_empty:
@@ -663,7 +661,7 @@ async def jacare(ctx):
             await ctx.send(f"🐊 $jacare")
         except Exception as e:
             await ctx.send("Erro 0x4A6F")
-            #print(f"{type(e).__name__}\n{repr(e)}") 
+            print(f"{type(e).__name__}\n{repr(e)}") 
     elif not ctx.author.voice.channel.name:
         return await ctx.send("voce precisa estar em um canal de voz. burro.")
     elif ctx.author.voice.channel.name != ctx.me.voice.channel.name:
@@ -684,18 +682,13 @@ async def jacare(ctx):
     print(tracks2[0])
     print(last_track2)
     CustomPlayer.last_playlist_track = last_track2
-    # vc.queue.clear()
+    vc.queue.clear()
     cont = 0
     for track in tracks:
-        #if(cont < 150):
         vc.queue.put(track)
-        #else:
-        #    break
-        #cont += 1
     for track in tracks2:
         vc.queue.put(track)
-    vc.queue.shuffle()
-    print(vc.queue.count)
+        vc.queue.shuffle()
     if not vc.is_playing():
         first = vc.queue.get()
         await vc.play(first)
@@ -714,8 +707,7 @@ async def jacare(ctx):
         await ctx.send(embed=em)
     await ctx.send("Jacaré musicas tocando agora")
     vc.jacare = True 
-    #vc.ctx = ctx
-    #CustomPlayer.playlist_ctx = vc.ctx
+    
         
 @client.command()
 async def ajuda(ctx):

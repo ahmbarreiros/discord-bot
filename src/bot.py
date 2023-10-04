@@ -82,7 +82,7 @@ async def entrar(ctx):
             await ctx.send("🐊")
         except Exception as e:
             await ctx.send("Erro 0x4A4C")
-            print(f"{type(e).__name__}\n{repr(e)}") 
+            #print(f"{type(e).__name__}\n{repr(e)}") 
 
 @client.command(pass_context = True)
 async def sair(ctx):
@@ -133,7 +133,7 @@ async def musica(ctx, *, search: wavelink.YouTubeTrack, channel = None):
             return await ctx.send(embed=em)
         except Exception as e:
             await ctx.send("Erro 0x4A4E")
-            print(f"{type(e).__name__}\n{repr(e)}") 
+            #print(f"{type(e).__name__}\n{repr(e)}") 
     else:
         try:
             await vc.play(search)
@@ -152,9 +152,9 @@ async def musica(ctx, *, search: wavelink.YouTubeTrack, channel = None):
             
         except Exception as e:
             await ctx.send("Erro 0x4A4F")
-            print(f"{type(e).__name__}\n{repr(e)}") 
+            #print(f"{type(e).__name__}\n{repr(e)}") 
         
-    vc.ctx = ctx
+    #vc.ctx = ctx
     setattr(vc, "loop", False)
     
 @client.command()
@@ -168,7 +168,7 @@ async def playlist(ctx, search: str):
             await ctx.send(f"🐊")
         except Exception as e:
             await ctx.send("Erro 0x4A5A")
-            print(f"{type(e).__name__}\n{repr(e)}") 
+            #print(f"{type(e).__name__}\n{repr(e)}") 
     elif not ctx.author.voice.channel.name:
         return await ctx.send("voce precisa estar em um canal de voz. .")
     elif ctx.author.voice.channel.name != ctx.me.voice.channel.name:
@@ -281,89 +281,14 @@ async def historico(ctx):
     return await ctx.send(embed=em)
 
 @client.event
-async def on_wavelink_track_start(payload: wavelink.TrackEventPayload):
-    await asyncio.sleep(2)
-    player = payload.player
-    track = player.current
-    try:
-        ctx = player.channel
-        
-        if ctx is None:
-            ctx = Custom_player.playlist_ctx
-        if ctx is None:
-            raise Exception
-    except:
-        print("ctx does not exist")
-        return
-    try:
-        CustomPlayer.thumb = track.thumbnail
-        track_thumb = CustomPlayer.thumb
-    except Exception as e:
-        await ctx.send("Erro 0x4A5C-1")
-        print(f"{type(e).__name__}\n{repr(e)}") 
-    if CustomPlayer.loop:
-        CustomPlayer.last_playlist_track = None
-        CustomPlayer.playlist_ctx = None
-    if not CustomPlayer.on_rewind:
-        tracks_history_copy = CustomPlayer.previous_tracks.copy()
-        CustomPlayer.rewind_history = tracks_history_copy
-    track = payload.track
-    try:
-            track_history = CustomPlayer.previous_tracks.copy()
-            if len(track_history) >= 5:
-                track_history.pop(0)
-            track_history.append(track)
-            CustomPlayer.previous_tracks = track_history
-            try:
-                if ctx:
-                    em = discord.Embed(
-                    title=track.title,
-                    colour=discord.Colour.random().value
-                    )
-                    em.set_author(name=track.author)
-                    em.add_field(name="Duração:", value=f"{str(timedelta(milliseconds=track.length))}")
-                    em.add_field(name="Video URL:", value=f"{str(track.uri)}")
-                    return await ctx.send(embed=em)
-            except Exception as e:
-                await ctx.send("Erro 0x4A5D")
-                print(f"{type(e).__name__}\n{repr(e)}") 
-    except Exception as e:
-        await ctx.send("Erro 0x4A5C-2")
-        print(f"{type(e).__name__}\n{repr(e)}") 
-
-
-@client.event
 async def on_wavelink_track_end(payload: wavelink.TrackEventPayload):
-    if CustomPlayer.playlist_ctx is not None:
-        ctx = CustomPlayer.playlist_ctx
-        vc = ctx.voice_client
-    else:
-        vc = payload.player
-        ltrack = payload.track
-        ctx = vc.ctx
-        channel = ctx.channel
-    try:
-        if vc.loop and CustomPlayer.playlist_ctx is None:
-            await vc.play(ltrack)
-    except Exception as e:
-        await ctx.send("Erro 0x4A5E")
-        print(f"{type(e).__name__}\n{repr(e)}") 
-        pass
-    await asyncio.sleep(1)
+    vc = payload.player
+    ltrack = payload.track
     if not vc.is_playing() and not vc.queue.is_empty:
-        try:
-            track = vc.queue.get()
-            del vc.queue[0]
-            await vc.play(track)
-            await asyncio.sleep(1)
-        except Exception as e:
-            await ctx.send("Erro 0x4A5F")
-            print(f"{type(e).__name__}\n{repr(e)}") 
-    else:
-        await asyncio.sleep(5)
-        if not vc.is_playing() and vc.queue.is_empty:
-            await ctx.guild.voice_client.disconnect()
-            await ctx.send("Devido à inatividade, saí do canal de voz.")
+        print("aqui")
+        track = vc.queue.get()
+        del vc.queue[0]
+        await vc.play(track)
 
 @client.command(pass_context = True)
 async def pausar(ctx):
@@ -434,7 +359,7 @@ async def loop(ctx):
     except Exception as e:
         setattr(vc, "loop", False)
         await ctx.send("Erro 0x4A6A")
-        print(f"{type(e).__name__}\n{repr(e)}") 
+        #print(f"{type(e).__name__}\n{repr(e)}") 
     if vc.loop:
         await ctx.send("loop ativado")
     else:
@@ -496,7 +421,7 @@ async def reiniciar(ctx):
                 
         except Exception as e:
             await ctx.send("Erro 0x4A6B")
-        print(f"{type(e).__name__}\n{repr(e)}") 
+            #print(f"{type(e).__name__}\n{repr(e)}") 
     else:
         await ctx.send("bot nao está em um canal de musica")
 
@@ -508,7 +433,7 @@ async def retroceder(ctx, position = None):
         index_pos = int(position)
     except Exception as e:
         await ctx.send("Erro 0x4A6C-1")
-        print(f"{type(e).__name__}\n{repr(e)}") 
+        #print(f"{type(e).__name__}\n{repr(e)}") 
     if not ctx.author.voice:
         return await ctx.send("voce precisa estar em um canal de voz pra retroceder")
     elif not vc:
@@ -543,7 +468,7 @@ async def retroceder(ctx, position = None):
             await ctx.send("retrocedido... tocando a musica especificada")
         except:
             await ctx.send("Erro 0x4A6C-2")
-            print(f"{type(e).__name__}\n{repr(e)}") 
+            #print(f"{type(e).__name__}\n{repr(e)}") 
             return await ctx.send("index inválido, não foi possível retroceder a música desejada. Tente de novo com um index válido ou com o nome da música")
         
 @client.command()
@@ -560,15 +485,11 @@ async def ir(ctx, tempo):
             print(f"tempo: {tempo}")
             raise AttributeError
         formato = time_to_ms(tempo)
-        print(f"formato: {formato}")
+        #print(f"formato: {formato}")
     except Exception as e:
             await ctx.send("Erro 0x4A6D")
             print(f"{type(e).__name__}\n{repr(e)}") 
             return await ctx.send("você precisa determinar um tempo para eu pular para. O formato é hh:mm:ss")
-    print("-" * 8)
-    print(tempo)
-    print(formato)
-    print("-" * 8)
     try:
         if vc.is_paused():
             await vc.resume()
@@ -576,7 +497,7 @@ async def ir(ctx, tempo):
             await vc.seek(formato)
     except Exception as e:
             await ctx.send("Erro 0x4A6E")
-            print(f"{type(e).__name__}\n{repr(e)}") 
+            #print(f"{type(e).__name__}\n{repr(e)}") 
             return await ctx.send("erro ao ir para o tempo especificado. O formato é hh:mm:ss")
 
 
@@ -610,8 +531,6 @@ async def tocando(ctx):
     track = player.current
     CustomPlayer.thumb = track.thumbnail
     track_thumb = CustomPlayer.thumb
-    print("-"*10)
-    print(track_thumb)
     if not vc:
         return await ctx.send("eu não to em um canal de voz")
     
@@ -627,28 +546,6 @@ async def tocando(ctx):
     em.add_field(name="Duração:", value=f"{str(timedelta(milliseconds=track.length))}")
     em.add_field(name="Video URL:", value=f"{str(track.uri)}")
     return await ctx.send(embed=em)
-
-
-@client.command()
-async def boost(ctx):
-    vc = ctx.voice_client
-    node = wavelink.NodePool.get_connected_node()
-    player = node.get_player(ctx.guild.id)
-    if not ctx.author.voice:
-        return await ctx.send("voce precisa estar em um canal de voz pra pular burro")
-    elif not vc:
-        return await ctx.send("preciso estar em um canal")
-    elif ctx.me.voice.channel.name != ctx.author.voice.channel.name:
-        return await ctx.send(f"eu to tocando musica nesse canal ó 👉 {ctx.me.voice.channel.name}, so vai pular se entrar aqui")
-    if vc._filter is None:
-        await vc.set_filter(wavelink.Filter())
-    if vc:
-        t = {
-            "boost": await vc.set_filter(wavelink.Filter(vc._filter, equalizer=wavelink.Equalizer.boost()))
-        }
-        await vc.set_filter(wavelink.Filter(t["boost"]))
-        await ctx.send("boost ativado")
-        
         
 @client.command()
 async def jacare(ctx):
@@ -734,10 +631,10 @@ async def ajuda(ctx):
 async def play_error(ctx, error):
     if isinstance(error, commands.BadArgument):
         await ctx.send("Erro 0x4A6F-1")
-        print(f"{type(error).__name__}\n{repr(error)}") 
+        #print(f"{type(error).__name__}\n{repr(error)}") 
         await ctx.send("É possível que a música não esteja no Youtube.")
     else:
         await ctx.send("Erro 0x4A6F-2")
-        print(f"{type(error).__name__}\n{repr(error)}") 
+        #print(f"{type(error).__name__}\n{repr(error)}") 
   
 client.run(token)
